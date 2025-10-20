@@ -1,0 +1,13 @@
+[project]
+name = "kospi-livermore"
+version = "0.1.0"
+description = "KOSPI breakout screener using Livermore logic"
+authors = [{ name = "Sangbum" }]
+requires-python = ">=3.10"
+
+dependencies = [
+    "pandas",
+    "streamlit",
+    "textblob",
+    "finance-datareader @ git+https://github.com/FinanceData/FinanceDataReader.git"
+]

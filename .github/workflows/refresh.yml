@@ -1,0 +1,38 @@
+name: 🔄 Auto-refresh KOSPI Screener
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Runs daily at 17:00 KST (08:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: ⚡ Install uv
+        run: pip install uv
+
+      - name: 📦 Install dependencies
+        run: uv pip install -r pyproject.toml
+
+      - name: 🚀 Run screener
+        run: uv run python refresh.py
+
+      - name: 📤 Commit results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add latest_kospi.csv data/ sectors/ tiers/ failed_tickers.csv
+          git commit -m "🔄 Auto-refresh KOSPI screener"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
