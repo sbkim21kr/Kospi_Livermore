@@ -13,6 +13,12 @@ st.markdown("""
 It’s calculated as:  
 **Volume Spike = Today's Volume ÷ 20-day Average Volume**  
 A value above 2.0 suggests unusual trading activity — often a sign of accumulation or breakout behavior.
+
+### 📈 What Do the Arrows Mean?
+Arrows next to the closing price show the 20-day price trend:
+- ⬆️ Upward: Price is rising
+- ⬇️ Downward: Price is falling
+- ➡️ Sideways: Price is stable
 """)
 
 # --- Load Main Data ---
@@ -34,9 +40,22 @@ min_volume_spike = st.number_input("Minimum Volume Spike", min_value=1.0, max_va
 filtered = df[df['Volume Spike'] >= min_volume_spike].copy()
 
 # --- Format numbers with commas ---
-for col in ['MarketCap', 'Volume', 'Close']:
+for col in ['MarketCap', 'Volume']:
     if col in filtered.columns:
         filtered[col] = filtered[col].apply(lambda x: f"{int(x):,}")
+
+# --- Add arrows to Close column ---
+def add_arrow(row):
+    if '20-day Avg Close' not in row or pd.isna(row['20-day Avg Close']):
+        return f"{int(row['Close']):,}"
+    change = (row['Close'] - row['20-day Avg Close']) / row['20-day Avg Close']
+    arrow = "⬆️" if change > 0.03 else "⬇️" if change < -0.03 else "➡️"
+    return f"{int(row['Close']):,} {arrow}"
+
+if '20-day Avg Close' in filtered.columns:
+    filtered['Close'] = filtered.apply(add_arrow, axis=1)
+else:
+    filtered['Close'] = filtered['Close'].apply(lambda x: f"{int(x):,}")
 
 # --- Display Table ---
 st.markdown("### 📋 Breakout Stocks")
@@ -63,7 +82,7 @@ txt_output = (
 
 st.download_button(
     label="📥 Download Filtered Results as TXT",
-    data=txt_output,
+    data=txt_output.encode('utf-8'),
     file_name='filtered_kospi.txt',
     mime='text/plain'
 )
@@ -75,7 +94,11 @@ if os.path.exists('data'):
     selected_file = st.selectbox("Choose a date to view", archive_files)
     if selected_file:
         archive_df = pd.read_csv(f'data/{selected_file}')
-        for col in ['MarketCap', 'Volume', 'Close']:
+        for col in ['MarketCap', 'Volume']:
             if col in archive_df.columns:
                 archive_df[col] = archive_df[col].apply(lambda x: f"{int(x):,}")
+        if '20-day Avg Close' in archive_df.columns:
+            archive_df['Close'] = archive_df.apply(add_arrow, axis=1)
+        else:
+            archive_df['Close'] = archive_df['Close'].apply(lambda x: f"{int(x):,}")
         st.dataframe(archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']])
