@@ -5,6 +5,9 @@ on:
     - cron: '0 8 * * *'  # Runs daily at 17:00 KST (08:00 UTC)
   workflow_dispatch:
 
+permissions:
+  contents: write  # ✅ Allows pushing updated CSVs back to the repo
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -35,4 +38,4 @@ jobs:
           git commit -m "🔄 Auto-refresh KOSPI screener"
           git push
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
