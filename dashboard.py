@@ -42,11 +42,28 @@ for col in ['MarketCap', 'Volume', 'Close']:
 st.markdown("### 📋 Breakout Stocks")
 st.dataframe(filtered[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']])
 
-# --- Download as TXT ---
-txt = filtered[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']].to_string(index=False)
+# --- Top 5 Volume Spikes ---
+st.markdown("### 🔥 Top 5 Volume Spikes Today")
+top5 = filtered.sort_values(by='Volume Spike', ascending=False).head(5)
+st.dataframe(top5[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']])
+
+# --- Download as TXT with Timestamp and Top 5 ---
+header = f"KOSPI Livermore Screener — Volume Spike Filter\nData retrieved at: {timestamp} KST\n\n"
+
+main_table = filtered[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']].to_string(index=False)
+top5_table = top5[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']].to_string(index=False)
+
+txt_output = (
+    header +
+    "🔥 Top 5 Volume Spikes Today:\n" +
+    top5_table +
+    "\n\n📋 All Filtered Results:\n" +
+    main_table
+)
+
 st.download_button(
     label="📥 Download Filtered Results as TXT",
-    data=txt,
+    data=txt_output,
     file_name='filtered_kospi.txt',
     mime='text/plain'
 )
