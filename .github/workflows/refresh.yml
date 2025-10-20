@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # ✅ Allows pushing changes back to the repo
+  contents: write
 
 jobs:
   refresh:
@@ -23,6 +23,9 @@ jobs:
 
       - name: ⚡ Install uv
         run: pip install uv
+
+      - name: 🧪 Create virtual environment
+        run: uv venv
 
       - name: 📦 Install dependencies
         run: uv pip install -r pyproject.toml
