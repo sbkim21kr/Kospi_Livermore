@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # ✅ Allows pushing updated CSVs back to the repo
+  contents: write  # ✅ Allows pushing changes back to the repo
 
 jobs:
   refresh:
