@@ -39,23 +39,29 @@ min_volume_spike = st.number_input("Minimum Volume Spike", min_value=1.0, max_va
 # --- Apply Filter ---
 filtered = df[df['Volume Spike'] >= min_volume_spike].copy()
 
-# --- Ensure numeric columns ---
+# --- Ensure numeric columns safely ---
 for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike', '20-day Avg Close']:
-    filtered[col] = pd.to_numeric(filtered[col], errors='coerce')
+    if col in filtered.columns:
+        filtered[col] = pd.to_numeric(filtered[col], errors='coerce')
 
 # --- Add raw columns for sorting ---
-filtered['MarketCap_raw'] = filtered['MarketCap']
-filtered['Volume_raw'] = filtered['Volume']
-filtered['Close_raw'] = filtered['Close']
-filtered['Volume Spike_raw'] = filtered['Volume Spike']
+for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike']:
+    raw_col = f"{col}_raw"
+    if col in filtered.columns:
+        filtered[raw_col] = filtered[col]
 
 # --- Format display columns ---
-filtered['MarketCap'] = filtered['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-filtered['Volume'] = filtered['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-filtered['Close'] = filtered['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+if 'MarketCap_raw' in filtered.columns:
+    filtered['MarketCap'] = filtered['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+if 'Volume_raw' in filtered.columns:
+    filtered['Volume'] = filtered['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+if 'Close_raw' in filtered.columns:
+    filtered['Close'] = filtered['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
 
 # --- Add Trend Arrow column ---
 def get_arrow(row):
+    if 'Close_raw' not in row or '20-day Avg Close' not in row:
+        return ""
     if pd.isna(row['Close_raw']) or pd.isna(row['20-day Avg Close']):
         return ""
     change = (row['Close_raw'] - row['20-day Avg Close']) / row['20-day Avg Close']
@@ -106,15 +112,19 @@ if os.path.exists('data'):
     selected_file = st.selectbox("Choose a date to view", archive_files)
     if selected_file:
         archive_df = pd.read_csv(f'data/{selected_file}')
-        for col in ['MarketCap', 'Volume', 'Close', '20-day Avg Close']:
-            archive_df[col] = pd.to_numeric(archive_df[col], errors='coerce')
-        archive_df['MarketCap_raw'] = archive_df['MarketCap']
-        archive_df['Volume_raw'] = archive_df['Volume']
-        archive_df['Close_raw'] = archive_df['Close']
-        archive_df['Volume Spike_raw'] = archive_df['Volume Spike']
-        archive_df['MarketCap'] = archive_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-        archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-        archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike', '20-day Avg Close']:
+            if col in archive_df.columns:
+                archive_df[col] = pd.to_numeric(archive_df[col], errors='coerce')
+        for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike']:
+            raw_col = f"{col}_raw"
+            if col in archive_df.columns:
+                archive_df[raw_col] = archive_df[col]
+        if 'MarketCap_raw' in archive_df.columns:
+            archive_df['MarketCap'] = archive_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        if 'Volume_raw' in archive_df.columns:
+            archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        if 'Close_raw' in archive_df.columns:
+            archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
         archive_df['Trend Arrow'] = archive_df.apply(get_arrow, axis=1)
         st.dataframe(
             archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Trend Arrow', 'Volume', 'Volume Spike']],
