@@ -50,11 +50,6 @@ for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike']:
     if col in filtered.columns:
         filtered[raw_col] = filtered[col]
 
-# --- Format display columns ---
-filtered['MarketCap'] = filtered['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-filtered['Volume'] = filtered['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-filtered['Close'] = filtered['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-
 # --- Add Trend Direction column ---
 def get_trend(row):
     try:
@@ -67,38 +62,48 @@ filtered['Trend Direction'] = filtered.apply(get_trend, axis=1)
 
 # --- Display Breakout Stocks ---
 st.markdown("### 📋 Breakout Stocks")
+display_df = filtered.copy()
+display_df['MarketCap'] = display_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+display_df['Volume'] = display_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+display_df['Close'] = display_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+display_df['Volume Spike'] = display_df['Volume Spike_raw'].round(2)
+
 st.dataframe(
-    filtered,
-    column_config={
-        "MarketCap": st.column_config.TextColumn("MarketCap", sort_by="MarketCap_raw"),
-        "Close": st.column_config.TextColumn("Close", sort_by="Close_raw"),
-        "Volume": st.column_config.TextColumn("Volume", sort_by="Volume_raw"),
-        "Volume Spike": st.column_config.NumberColumn("Volume Spike", sort_by="Volume Spike_raw"),
-    },
-    column_order=["Code", "Name", "MarketCap", "Close", "Trend Direction", "Volume", "Volume Spike"],
+    display_df[['Code', 'Name', 'MarketCap_raw', 'Close_raw', 'Trend Direction', 'Volume_raw', 'Volume Spike_raw']]
+    .rename(columns={
+        'MarketCap_raw': 'MarketCap',
+        'Close_raw': 'Close',
+        'Volume_raw': 'Volume',
+        'Volume Spike_raw': 'Volume Spike'
+    }),
     use_container_width=True
 )
 
 # --- Top 5 Volume Spikes ---
 st.markdown("### 🔥 Top 5 Volume Spikes Today")
 top5 = filtered.sort_values(by='Volume Spike_raw', ascending=False).head(5)
+top5_display = top5.copy()
+top5_display['MarketCap'] = top5_display['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+top5_display['Volume'] = top5_display['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+top5_display['Close'] = top5_display['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+top5_display['Volume Spike'] = top5_display['Volume Spike_raw'].round(2)
+
 st.dataframe(
-    top5,
-    column_config={
-        "MarketCap": st.column_config.TextColumn("MarketCap", sort_by="MarketCap_raw"),
-        "Close": st.column_config.TextColumn("Close", sort_by="Close_raw"),
-        "Volume": st.column_config.TextColumn("Volume", sort_by="Volume_raw"),
-        "Volume Spike": st.column_config.NumberColumn("Volume Spike", sort_by="Volume Spike_raw"),
-    },
-    column_order=["Code", "Name", "MarketCap", "Close", "Trend Direction", "Volume", "Volume Spike"],
+    top5_display[['Code', 'Name', 'MarketCap_raw', 'Close_raw', 'Trend Direction', 'Volume_raw', 'Volume Spike_raw']]
+    .rename(columns={
+        'MarketCap_raw': 'MarketCap',
+        'Close_raw': 'Close',
+        'Volume_raw': 'Volume',
+        'Volume Spike_raw': 'Volume Spike'
+    }),
     use_container_width=True
 )
 
 # --- Download as TXT with Timestamp and Top 5 ---
 header = f"KOSPI Livermore Screener — Volume Spike Filter\nData retrieved at: {timestamp} KST\n\n"
 
-main_table = filtered[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']].to_string(index=False)
-top5_table = top5[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']].to_string(index=False)
+main_table = display_df[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']].to_string(index=False)
+top5_table = top5_display[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']].to_string(index=False)
 
 txt_output = (
     header +
@@ -129,18 +134,19 @@ if os.path.exists('data'):
             raw_col = f"{col}_raw"
             if col in archive_df.columns:
                 archive_df[raw_col] = archive_df[col]
+        archive_df['Trend Direction'] = archive_df.apply(get_trend, axis=1)
         archive_df['MarketCap'] = archive_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
         archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
         archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-        archive_df['Trend Direction'] = archive_df.apply(get_trend, axis=1)
+        archive_df['Volume Spike'] = archive_df['Volume Spike_raw'].round(2)
+
         st.dataframe(
-            archive_df,
-            column_config={
-                "MarketCap": st.column_config.TextColumn("MarketCap", sort_by="MarketCap_raw"),
-                "Close": st.column_config.TextColumn("Close", sort_by="Close_raw"),
-                "Volume": st.column_config.TextColumn("Volume", sort_by="Volume_raw"),
-                "Volume Spike": st.column_config.NumberColumn("Volume Spike", sort_by="Volume Spike_raw"),
-            },
-            column_order=["Code", "Name", "MarketCap", "Close", "Trend Direction", "Volume", "Volume Spike"],
+            archive_df[['Code', 'Name', 'MarketCap_raw', 'Close_raw', 'Trend Direction', 'Volume_raw', 'Volume Spike_raw']]
+            .rename(columns={
+                'MarketCap_raw': 'MarketCap',
+                'Close_raw': 'Close',
+                'Volume_raw': 'Volume',
+                'Volume Spike_raw': 'Volume Spike'
+            }),
             use_container_width=True
         )
