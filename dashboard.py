@@ -51,28 +51,31 @@ for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike']:
         filtered[raw_col] = filtered[col]
 
 # --- Format display columns ---
-if 'MarketCap_raw' in filtered.columns:
-    filtered['MarketCap'] = filtered['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-if 'Volume_raw' in filtered.columns:
-    filtered['Volume'] = filtered['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-if 'Close_raw' in filtered.columns:
-    filtered['Close'] = filtered['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+filtered['MarketCap'] = filtered['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+filtered['Volume'] = filtered['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+filtered['Close'] = filtered['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
 
 # --- Add Trend Direction column ---
 def get_trend(row):
-    if 'Close_raw' not in row or '20-day Avg Close' not in row:
+    try:
+        change = (row['Close_raw'] - row['20-day Avg Close']) / row['20-day Avg Close']
+        return "upward" if change > 0.03 else "downward" if change < -0.03 else "sideways"
+    except:
         return ""
-    if pd.isna(row['Close_raw']) or pd.isna(row['20-day Avg Close']):
-        return ""
-    change = (row['Close_raw'] - row['20-day Avg Close']) / row['20-day Avg Close']
-    return "upward" if change > 0.03 else "downward" if change < -0.03 else "sideways"
 
 filtered['Trend Direction'] = filtered.apply(get_trend, axis=1)
 
 # --- Display Breakout Stocks ---
 st.markdown("### 📋 Breakout Stocks")
 st.dataframe(
-    filtered[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']],
+    filtered,
+    column_config={
+        "MarketCap": st.column_config.TextColumn("MarketCap", sort_by="MarketCap_raw"),
+        "Close": st.column_config.TextColumn("Close", sort_by="Close_raw"),
+        "Volume": st.column_config.TextColumn("Volume", sort_by="Volume_raw"),
+        "Volume Spike": st.column_config.NumberColumn("Volume Spike", sort_by="Volume Spike_raw"),
+    },
+    column_order=["Code", "Name", "MarketCap", "Close", "Trend Direction", "Volume", "Volume Spike"],
     use_container_width=True
 )
 
@@ -80,7 +83,14 @@ st.dataframe(
 st.markdown("### 🔥 Top 5 Volume Spikes Today")
 top5 = filtered.sort_values(by='Volume Spike_raw', ascending=False).head(5)
 st.dataframe(
-    top5[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']],
+    top5,
+    column_config={
+        "MarketCap": st.column_config.TextColumn("MarketCap", sort_by="MarketCap_raw"),
+        "Close": st.column_config.TextColumn("Close", sort_by="Close_raw"),
+        "Volume": st.column_config.TextColumn("Volume", sort_by="Volume_raw"),
+        "Volume Spike": st.column_config.NumberColumn("Volume Spike", sort_by="Volume Spike_raw"),
+    },
+    column_order=["Code", "Name", "MarketCap", "Close", "Trend Direction", "Volume", "Volume Spike"],
     use_container_width=True
 )
 
@@ -119,14 +129,18 @@ if os.path.exists('data'):
             raw_col = f"{col}_raw"
             if col in archive_df.columns:
                 archive_df[raw_col] = archive_df[col]
-        if 'MarketCap_raw' in archive_df.columns:
-            archive_df['MarketCap'] = archive_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-        if 'Volume_raw' in archive_df.columns:
-            archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-        if 'Close_raw' in archive_df.columns:
-            archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        archive_df['MarketCap'] = archive_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
         archive_df['Trend Direction'] = archive_df.apply(get_trend, axis=1)
         st.dataframe(
-            archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']],
+            archive_df,
+            column_config={
+                "MarketCap": st.column_config.TextColumn("MarketCap", sort_by="MarketCap_raw"),
+                "Close": st.column_config.TextColumn("Close", sort_by="Close_raw"),
+                "Volume": st.column_config.TextColumn("Volume", sort_by="Volume_raw"),
+                "Volume Spike": st.column_config.NumberColumn("Volume Spike", sort_by="Volume Spike_raw"),
+            },
+            column_order=["Code", "Name", "MarketCap", "Close", "Trend Direction", "Volume", "Volume Spike"],
             use_container_width=True
         )
