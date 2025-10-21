@@ -39,32 +39,37 @@ min_volume_spike = st.number_input("Minimum Volume Spike", min_value=1.0, max_va
 # --- Apply Filter ---
 filtered = df[df['Volume Spike'] >= min_volume_spike].copy()
 
-# --- Format numbers with commas ---
-for col in ['MarketCap', 'Volume']:
-    if col in filtered.columns:
-        filtered[col] = filtered[col].apply(lambda x: f"{int(x):,}")
+# --- Create Raw Columns for Sorting ---
+for col in ['MarketCap', 'Volume', 'Close', 'Volume Spike']:
+    filtered[f'{col}_raw'] = pd.to_numeric(filtered[col], errors='coerce')
 
-# --- Add arrows to Close column ---
+# --- Format Display Columns ---
+filtered['MarketCap'] = filtered['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+filtered['Volume'] = filtered['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+
 def add_arrow(row):
     if '20-day Avg Close' not in row or pd.isna(row['20-day Avg Close']):
-        return f"{int(row['Close']):,}"
-    change = (row['Close'] - row['20-day Avg Close']) / row['20-day Avg Close']
+        return f"{int(row['Close_raw']):,}"
+    change = (row['Close_raw'] - row['20-day Avg Close']) / row['20-day Avg Close']
     arrow = "⬆️" if change > 0.03 else "⬇️" if change < -0.03 else "➡️"
-    return f"{int(row['Close']):,} {arrow}"
+    return f"{int(row['Close_raw']):,} {arrow}"
 
-if '20-day Avg Close' in filtered.columns:
-    filtered['Close'] = filtered.apply(add_arrow, axis=1)
-else:
-    filtered['Close'] = filtered['Close'].apply(lambda x: f"{int(x):,}")
+filtered['Close'] = filtered.apply(add_arrow, axis=1)
 
-# --- Display Table ---
+# --- Display Breakout Stocks ---
 st.markdown("### 📋 Breakout Stocks")
-st.dataframe(filtered[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']])
+st.dataframe(
+    filtered[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']],
+    use_container_width=True
+)
 
 # --- Top 5 Volume Spikes ---
 st.markdown("### 🔥 Top 5 Volume Spikes Today")
-top5 = filtered.sort_values(by='Volume Spike', ascending=False).head(5)
-st.dataframe(top5[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']])
+top5 = filtered.sort_values(by='Volume Spike_raw', ascending=False).head(5)
+st.dataframe(
+    top5[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']],
+    use_container_width=True
+)
 
 # --- Download as TXT with Timestamp and Top 5 ---
 header = f"KOSPI Livermore Screener — Volume Spike Filter\nData retrieved at: {timestamp} KST\n\n"
@@ -94,11 +99,15 @@ if os.path.exists('data'):
     selected_file = st.selectbox("Choose a date to view", archive_files)
     if selected_file:
         archive_df = pd.read_csv(f'data/{selected_file}')
-        for col in ['MarketCap', 'Volume']:
-            if col in archive_df.columns:
-                archive_df[col] = archive_df[col].apply(lambda x: f"{int(x):,}")
+        for col in ['MarketCap', 'Volume', 'Close']:
+            archive_df[f'{col}_raw'] = pd.to_numeric(archive_df[col], errors='coerce')
+        archive_df['MarketCap'] = archive_df['MarketCap_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
         if '20-day Avg Close' in archive_df.columns:
             archive_df['Close'] = archive_df.apply(add_arrow, axis=1)
         else:
-            archive_df['Close'] = archive_df['Close'].apply(lambda x: f"{int(x):,}")
-        st.dataframe(archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']])
+            archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
+        st.dataframe(
+            archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Volume', 'Volume Spike']],
+            use_container_width=True
+        )
