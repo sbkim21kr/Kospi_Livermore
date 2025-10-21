@@ -14,11 +14,11 @@ It’s calculated as:
 **Volume Spike = Today's Volume ÷ 20-day Average Volume**  
 A value above 2.0 suggests unusual trading activity — often a sign of accumulation or breakout behavior.
 
-### 📈 What Do the Arrows Mean?
-Arrows in the **Trend Arrow** column show the 20-day price trend:
-- ⬆️ Upward: Price is rising
-- ⬇️ Downward: Price is falling
-- ➡️ Sideways: Price is stable
+### 📈 What Do the Trend Words Mean?
+The **Trend Direction** column shows the 20-day price trend:
+- `upward`: Price is rising
+- `downward`: Price is falling
+- `sideways`: Price is stable
 """)
 
 # --- Load Main Data ---
@@ -58,21 +58,21 @@ if 'Volume_raw' in filtered.columns:
 if 'Close_raw' in filtered.columns:
     filtered['Close'] = filtered['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
 
-# --- Add Trend Arrow column ---
-def get_arrow(row):
+# --- Add Trend Direction column ---
+def get_trend(row):
     if 'Close_raw' not in row or '20-day Avg Close' not in row:
         return ""
     if pd.isna(row['Close_raw']) or pd.isna(row['20-day Avg Close']):
         return ""
     change = (row['Close_raw'] - row['20-day Avg Close']) / row['20-day Avg Close']
-    return "⬆️" if change > 0.03 else "⬇️" if change < -0.03 else "➡️"
+    return "upward" if change > 0.03 else "downward" if change < -0.03 else "sideways"
 
-filtered['Trend Arrow'] = filtered.apply(get_arrow, axis=1)
+filtered['Trend Direction'] = filtered.apply(get_trend, axis=1)
 
 # --- Display Breakout Stocks ---
 st.markdown("### 📋 Breakout Stocks")
 st.dataframe(
-    filtered[['Code', 'Name', 'MarketCap', 'Close', 'Trend Arrow', 'Volume', 'Volume Spike']],
+    filtered[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']],
     use_container_width=True
 )
 
@@ -80,15 +80,15 @@ st.dataframe(
 st.markdown("### 🔥 Top 5 Volume Spikes Today")
 top5 = filtered.sort_values(by='Volume Spike_raw', ascending=False).head(5)
 st.dataframe(
-    top5[['Code', 'Name', 'MarketCap', 'Close', 'Trend Arrow', 'Volume', 'Volume Spike']],
+    top5[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']],
     use_container_width=True
 )
 
 # --- Download as TXT with Timestamp and Top 5 ---
 header = f"KOSPI Livermore Screener — Volume Spike Filter\nData retrieved at: {timestamp} KST\n\n"
 
-main_table = filtered[['Code', 'Name', 'MarketCap', 'Close', 'Trend Arrow', 'Volume', 'Volume Spike']].to_string(index=False)
-top5_table = top5[['Code', 'Name', 'MarketCap', 'Close', 'Trend Arrow', 'Volume', 'Volume Spike']].to_string(index=False)
+main_table = filtered[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']].to_string(index=False)
+top5_table = top5[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']].to_string(index=False)
 
 txt_output = (
     header +
@@ -125,8 +125,8 @@ if os.path.exists('data'):
             archive_df['Volume'] = archive_df['Volume_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
         if 'Close_raw' in archive_df.columns:
             archive_df['Close'] = archive_df['Close_raw'].apply(lambda x: f"{int(x):,}" if pd.notna(x) else "")
-        archive_df['Trend Arrow'] = archive_df.apply(get_arrow, axis=1)
+        archive_df['Trend Direction'] = archive_df.apply(get_trend, axis=1)
         st.dataframe(
-            archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Trend Arrow', 'Volume', 'Volume Spike']],
+            archive_df[['Code', 'Name', 'MarketCap', 'Close', 'Trend Direction', 'Volume', 'Volume Spike']],
             use_container_width=True
         )
