@@ -1,9 +1,9 @@
 name: 🔄 Auto-refresh KOSPI Screener
 
-on:
-  schedule:
-    - cron: '0 8 * * *'  # Runs daily at 17:00 KST (08:00 UTC)
-  workflow_dispatch:
+# on:
+#   schedule:
+#     - cron: '0 8 * * *'  # Runs daily at 17:00 KST (08:00 UTC)
+#   workflow_dispatch:
 
 permissions:
   contents: write
